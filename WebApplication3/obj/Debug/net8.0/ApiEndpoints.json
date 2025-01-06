@@ -1,7 +1,7 @@
 [
   {
     "ContainingType": "WebApplication3.Controllers.StudentsController",
-    "Method": "CreateStudent",
+    "Method": "PostStudent",
     "RelativePath": "api/Students",
     "HttpMethod": "POST",
     "IsController": true,
@@ -13,17 +13,7 @@
         "IsRequired": true
       }
     ],
-    "ReturnTypes": [
-      {
-        "Type": "WebApplication3.Model.Entities.Student",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
+    "ReturnTypes": []
   },
   {
     "ContainingType": "WebApplication3.Controllers.StudentsController",

@@ -16,69 +16,51 @@ public class StudentsController : ControllerBase
 		_context = context;
 	}
 
-	// POST: api/Students
-	[HttpPost]
-	public async Task<ActionResult<Student>> CreateStudent([FromBody] Student student)
-	{
-		// Validate if student is not null
-		if (student == null)
-		{
-			return BadRequest("Student data is missing.");
-		}
+    // POST: api/Students
 
-		// Create a new student entity
-		var newStudent = new Student
-		{
-			Name = student.Name,
-			Phone = student.Phone,
-			Gender = student.Gender
-		};
+    [HttpPost]
+    public IActionResult PostStudent([FromBody] Student student)
+    {
+        if (student == null)
+        {
+            return BadRequest("Student object is null");
+        }
 
-		// Use LINQ to create Address and Guardian entities and associate them with the new student
-		newStudent.Address = student.Address
-			.Select(a => new Address
-			{
-				City = a.City,
-				State = a.State,
-				PostalCode = a.PostalCode,
-				// Set StudentId directly in the mapping using LINQ (we'll update this later after student is saved)
-				StudentId = newStudent.ID
-			}).ToList();
+        var newStudent = new Student
+        {
+            Name = student.Name,
+            Phone = student.Phone,
+            Gender = student.Gender,
+            Addresses = student.Addresses.Select(a => new Address
+            {
+                City = a.City,
+                State = a.State,
+                PostalCode = a.PostalCode,
+                StudentId = a.StudentId
+            }).ToList(),
+            Guardians = student.Guardians.Select(g => new Guardian
+            {
+                Name = g.Name,
+                Relation = g.Relation,
+                StudentId = g.StudentId
+            }).ToList()
+        };
 
-		newStudent.Guardians = student.Guardians
-			.Select(g => new Guardian
-			{
-				Name = g.Name,
-				Phone = g.Phone,
-				Email = g.Email,
-				// Set StudentId directly in the mapping using LINQ
-				StudentId = newStudent.ID
-			}).ToList();
+        _context.Students.Add(newStudent);
+        _context.SaveChanges();
 
-		// Add the student to the DbContext
-		_context.Student.Add(newStudent);
-		await _context.SaveChangesAsync(); // Save to generate ID for the new student
-
-		// Update StudentId for Address and Guardian after saving the student
-		//newStudent.Address.ForEach(a => a.StudentId = newStudent.ID);
-		//newStudent.Guardians.ForEach(g => g.StudentId = newStudent.ID);
-
-		// Save again to update the foreign keys for Address and Guardians
-		await _context.SaveChangesAsync();
-
-		// Return the created student along with related entities
-		return CreatedAtAction(nameof(GetStudent), new { id = newStudent.ID }, newStudent);
-	}
+        return Ok(new {message = "Student Added Sucessfully"});
+    }
 
 
 
 
-	// GET: api/Students/5
-	[HttpGet("{id}")]
+    // GET: api/Students/5
+    [HttpGet("{id}")]
 	public async Task<ActionResult<Student>> GetStudent(int id)
 	{
-		var student = await _context.Student
-			.Include(s => s.Address)
+		var student = await _context.Students
+			.Include(s => s.Addresses)
 			.Include(s => s.Guardians)
 			.FirstOrDefaultAsync(s => s.ID == id);
 
