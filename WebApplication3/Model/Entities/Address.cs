@@ -11,9 +11,12 @@ namespace WebApplication3.Model.Entities
 		public string? State { get; set; }
 		public string? PostalCode { get; set; }
 
+		// Foreign Key to Student
+		public int StudentId { get; set; }
 
+		// Navigation property to Student
+		public Student? Student { get; set; }
 
-	
 
 	}
 }

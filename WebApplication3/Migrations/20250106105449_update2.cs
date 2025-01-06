@@ -4,8 +4,8 @@
 
 namespace WebApplication3.Migrations
 {
-	/// <inheritdoc />
-	public partial class update1 : Migration
+    /// <inheritdoc />
+    public partial class update2 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

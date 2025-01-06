@@ -2,128 +2,93 @@
 using Microsoft.EntityFrameworkCore;
 using WebApplication3.Data;
 using WebApplication3.Model.Entities;
+namespace WebApplication3.Controllers;
 
-namespace WebApplication3.Controllers
+
+[ApiController]
+[Route("api/[controller]")]
+public class StudentsController : ControllerBase
 {
-	[Route("api/[Controller]")]
-	[ApiController]
-	public class StudentController : ControllerBase
+	private readonly StudentDBContext _context;
+
+	public StudentsController(StudentDBContext context)
 	{
-		private readonly StudentDBContext dbContext;
+		_context = context;
+	}
 
-		public StudentController(StudentDBContext dbContext)
+	// POST: api/Students
+	[HttpPost]
+	public async Task<ActionResult<Student>> CreateStudent([FromBody] Student student)
+	{
+		// Validate if student is not null
+		if (student == null)
 		{
-			this.dbContext = dbContext;
+			return BadRequest("Student data is missing.");
 		}
 
-		[HttpGet]
-		[Route("api")]
-		public IActionResult GetAllStudents()
+		// Create a new student entity
+		var newStudent = new Student
 		{
-			var allStudents = dbContext.Students.Include("Address").ToList();
+			Name = student.Name,
+			Phone = student.Phone,
+			Gender = student.Gender
+		};
 
-			return Ok(allStudents);
-		}
-
-
-		[HttpGet]
-		[Route("{id:int}")]
-		public IActionResult GetStudentsById(int id)
-		{
-			var student = dbContext.Students.Include("Address").FirstOrDefault(a => a.ID == id);
-			if (student is null)
+		// Use LINQ to create Address and Guardian entities and associate them with the new student
+		newStudent.Address = student.Address
+			.Select(a => new Address
 			{
-				return NotFound();
-			}
-			else
+				City = a.City,
+				State = a.State,
+				PostalCode = a.PostalCode,
+				// Set StudentId directly in the mapping using LINQ (we'll update this later after student is saved)
+				StudentId = newStudent.ID
+			}).ToList();
+
+		newStudent.Guardians = student.Guardians
+			.Select(g => new Guardian
 			{
-				return Ok(student);
-			}
-		}
+				Name = g.Name,
+				Phone = g.Phone,
+				Email = g.Email,
+				// Set StudentId directly in the mapping using LINQ
+				StudentId = newStudent.ID
+			}).ToList();
+
+		// Add the student to the DbContext
+		_context.Student.Add(newStudent);
+		await _context.SaveChangesAsync(); // Save to generate ID for the new student
+
+		// Update StudentId for Address and Guardian after saving the student
+		//newStudent.Address.ForEach(a => a.StudentId = newStudent.ID);
+		//newStudent.Guardians.ForEach(g => g.StudentId = newStudent.ID);
+
+		// Save again to update the foreign keys for Address and Guardians
+		await _context.SaveChangesAsync();
+
+		// Return the created student along with related entities
+		return CreatedAtAction(nameof(GetStudent), new { id = newStudent.ID }, newStudent);
+	}
 
 
-		//[HttpPost]
-
-		//public IActionResult AddStudents(Student addstudent)
-		//{
-		//	var studentEntity = new Student()
-		//	{
-		//		Name = addstudent.Name,
-		//		Phone = addstudent.Phone,
-		//		Gender = addstudent.Gender,
-		//	};
-		//	dbContext.Students.Add(studentEntity);
-		//	dbContext.SaveChanges();
-
-		//	return Ok(studentEntity);
-		//}
 
 
-		[HttpPost]
-		[Route("AddStudentsWithAddress")]
-		public IActionResult AddAddress(Student student)
+	// GET: api/Students/5
+	[HttpGet("{id}")]
+	public async Task<ActionResult<Student>> GetStudent(int id)
+	{
+		var student = await _context.Student
+			.Include(s => s.Address)
+			.Include(s => s.Guardians)
+			.FirstOrDefaultAsync(s => s.ID == id);
+
+		if (student == null)
 		{
-			var studentEntity = new Student()
-			{
-				Name = student.Name,
-				Phone = student.Phone,
-				Gender = student.Gender,
-				//child class ko call kre rhe hai
-				Address = new Address()
-				{
-					City = student.Address.City,
-					PostalCode = student.Address.PostalCode,
-					State = student.Address.State,
-				}
-			};
-			dbContext.Students.Add(student);
-			dbContext.SaveChanges();
-
-			return Ok(student);
+			return NotFound();
 		}
 
-		[HttpDelete]
-		[Route("{id:int}")]
-		public IActionResult DeleteStudent(int id) 
-		{
-			var Student = dbContext.Students.Include("Address").FirstOrDefault(b=>b.ID ==id);
-			if (Student is null)
-			{
-				return NotFound();
-			}
-			dbContext.Students.Remove(Student);
-			dbContext.SaveChanges();
-			return Ok(Student);
-
-		}
-
-		[HttpPut]
-		public IActionResult UpdateStudent(Student updatedStudent)
-		{
-			var existingStudent = dbContext.Students.Include(s => s.Address).FirstOrDefault(s => s.ID == updatedStudent.ID);
-
-			if (existingStudent == null)
-				return NotFound();
-
-			// Update Student details
-			existingStudent.Name = updatedStudent.Name;
-			existingStudent.Phone = updatedStudent.Phone;
-			existingStudent.Gender = updatedStudent.Gender;
-
-			// Update or add Address
-			if (updatedStudent.Address != null)
-			{
-				if (existingStudent.Address == null)
-					existingStudent.Address = new Address();
-
-				existingStudent.Address.City = updatedStudent.Address.City;
-				existingStudent.Address.PostalCode = updatedStudent.Address.PostalCode;
-				existingStudent.Address.State = updatedStudent.Address.State;
-			}
-
-			dbContext.SaveChanges();
-			return Ok(existingStudent);
-		}
-
+		return student;
 	}
 }
+
+

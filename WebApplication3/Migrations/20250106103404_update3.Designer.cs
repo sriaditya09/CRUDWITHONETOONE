@@ -11,7 +11,7 @@ using WebApplication3.Data;
 namespace WebApplication3.Migrations
 {
     [DbContext(typeof(StudentDBContext))]
-    [Migration("20250103104333_update3")]
+    [Migration("20250106103404_update3")]
     partial class update3
     {
         /// <inheritdoc />
@@ -27,7 +27,10 @@ namespace WebApplication3.Migrations
             modelBuilder.Entity("WebApplication3.Model.Entities.Address", b =>
                 {
                     b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ID"));
 
                     b.Property<string>("City")
                         .HasColumnType("text");
@@ -38,9 +41,41 @@ namespace WebApplication3.Migrations
                     b.Property<string>("State")
                         .HasColumnType("text");
 
+                    b.Property<int>("StudentId")
+                        .HasColumnType("integer");
+
                     b.HasKey("ID");
 
-                    b.ToTable("Addresses");
+                    b.HasIndex("StudentId");
+
+                    b.ToTable("Address");
+                });
+
+            modelBuilder.Entity("WebApplication3.Model.Entities.Guardian", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ID"));
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("text");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("StudentId");
+
+                    b.ToTable("Guardian");
                 });
 
             modelBuilder.Entity("WebApplication3.Model.Entities.Student", b =>
@@ -50,9 +85,6 @@ namespace WebApplication3.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ID"));
-
-                    b.Property<int>("AddressId")
-                        .HasColumnType("integer");
 
                     b.Property<string>("Gender")
                         .HasColumnType("text");
@@ -65,21 +97,36 @@ namespace WebApplication3.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Students");
+                    b.ToTable("Student");
                 });
 
             modelBuilder.Entity("WebApplication3.Model.Entities.Address", b =>
                 {
-                    b.HasOne("WebApplication3.Model.Entities.Student", null)
-                        .WithOne("Address")
-                        .HasForeignKey("WebApplication3.Model.Entities.Address", "ID")
+                    b.HasOne("WebApplication3.Model.Entities.Student", "Student")
+                        .WithMany("Address")
+                        .HasForeignKey("StudentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("WebApplication3.Model.Entities.Guardian", b =>
+                {
+                    b.HasOne("WebApplication3.Model.Entities.Student", "Student")
+                        .WithMany("Guardians")
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("WebApplication3.Model.Entities.Student", b =>
                 {
                     b.Navigation("Address");
+
+                    b.Navigation("Guardians");
                 });
 #pragma warning restore 612, 618
         }
