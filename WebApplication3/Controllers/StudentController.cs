@@ -27,36 +27,56 @@ public class StudentsController : ControllerBase
 		}
 
 		// Create a new student entity
-		var newStudent = new Student
+		//var newStudent = new Student()
+		//{
+		//	Name = student.Name,
+		//	Phone = student.Phone,
+		//	Gender = student.Gender,
+		//	Address = student.Address,
+		//	Guardians = student.Guardians,
+		//};
+
+
+
+		if (student.Address != null && student.Guardians.Count > 0)
 		{
-			Name = student.Name,
-			Phone = student.Phone,
-			Gender = student.Gender
-		};
+			foreach (var address in student.Address)
+			{
+				//book.AuthorId = author.AuthorId; // Set AuthorId for each book
+				address.StudentId = student.ID;	
+				address.State
+			}
+
+			foreach (var guardian in student.Guardians)
+			{
+				guardian.StudentId = student.ID;
+			}
+		}
+
 
 		// Use LINQ to create Address and Guardian entities and associate them with the new student
-		newStudent.Address = student.Address
-			.Select(a => new Address
-			{
-				City = a.City,
-				State = a.State,
-				PostalCode = a.PostalCode,
-				// Set StudentId directly in the mapping using LINQ (we'll update this later after student is saved)
-				StudentId = newStudent.ID
-			}).ToList();
+		//newStudent.Address = student.Address
+		//	.Select(a => new Address
+		//	{
+		//		City = a.City,
+		//		State = a.State,
+		//		PostalCode = a.PostalCode,
+		//		// Set StudentId directly in the mapping using LINQ (we'll update this later after student is saved)
+		//		StudentId = newStudent.ID
+		//	}).ToList();
 
-		newStudent.Guardians = student.Guardians
-			.Select(g => new Guardian
-			{
-				Name = g.Name,
-				Phone = g.Phone,
-				Email = g.Email,
-				// Set StudentId directly in the mapping using LINQ
-				StudentId = newStudent.ID
-			}).ToList();
+		//newStudent.Guardians = student.Guardians
+		//	.Select(g => new Guardian
+		//	{
+		//		Name = g.Name,
+		//		Phone = g.Phone,
+		//		Email = g.Email,
+		//		// Set StudentId directly in the mapping using LINQ
+		//		StudentId = newStudent.ID
+		//	}).ToList();
 
 		// Add the student to the DbContext
-		_context.Student.Add(newStudent);
+		await _context.Student.AddAsync(student);
 		await _context.SaveChangesAsync(); // Save to generate ID for the new student
 
 		// Update StudentId for Address and Guardian after saving the student
@@ -64,10 +84,11 @@ public class StudentsController : ControllerBase
 		//newStudent.Guardians.ForEach(g => g.StudentId = newStudent.ID);
 
 		// Save again to update the foreign keys for Address and Guardians
-		await _context.SaveChangesAsync();
+		//await _context.SaveChangesAsync();
 
 		// Return the created student along with related entities
-		return CreatedAtAction(nameof(GetStudent), new { id = newStudent.ID }, newStudent);
+		//return CreatedAtAction(nameof(GetStudent), new { id = newStudent.ID }, newStudent);
+		return Ok("posted data successfully");
 	}
 
 
