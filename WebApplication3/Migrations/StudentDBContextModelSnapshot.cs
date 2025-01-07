@@ -45,7 +45,7 @@ namespace WebApplication3.Migrations
 
                     b.HasIndex("StudentId");
 
-                    b.ToTable("Address");
+                    b.ToTable("Addresses");
                 });
 
             modelBuilder.Entity("WebApplication3.Model.Entities.Guardian", b =>
@@ -56,13 +56,10 @@ namespace WebApplication3.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ID"));
 
-                    b.Property<string>("Email")
-                        .HasColumnType("text");
-
                     b.Property<string>("Name")
                         .HasColumnType("text");
 
-                    b.Property<string>("Phone")
+                    b.Property<string>("Relation")
                         .HasColumnType("text");
 
                     b.Property<int>("StudentId")
@@ -72,7 +69,7 @@ namespace WebApplication3.Migrations
 
                     b.HasIndex("StudentId");
 
-                    b.ToTable("Guardian");
+                    b.ToTable("Guardians");
                 });
 
             modelBuilder.Entity("WebApplication3.Model.Entities.Student", b =>
@@ -94,13 +91,13 @@ namespace WebApplication3.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Student");
+                    b.ToTable("Students");
                 });
 
             modelBuilder.Entity("WebApplication3.Model.Entities.Address", b =>
                 {
                     b.HasOne("WebApplication3.Model.Entities.Student", "Student")
-                        .WithMany("Address")
+                        .WithMany("Addresses")
                         .HasForeignKey("StudentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -121,7 +118,7 @@ namespace WebApplication3.Migrations
 
             modelBuilder.Entity("WebApplication3.Model.Entities.Student", b =>
                 {
-                    b.Navigation("Address");
+                    b.Navigation("Addresses");
 
                     b.Navigation("Guardians");
                 });

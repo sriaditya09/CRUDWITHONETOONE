@@ -16,90 +16,52 @@ public class StudentsController : ControllerBase
 		_context = context;
 	}
 
-	// POST: api/Students
-	[HttpPost]
-	public async Task<ActionResult<Student>> CreateStudent([FromBody] Student student)
-	{
-		// Validate if student is not null
-		if (student == null)
-		{
-			return BadRequest("Student data is missing.");
-		}
+    // POST: api/Students
 
-		// Create a new student entity
-		//var newStudent = new Student()
-		//{
-		//	Name = student.Name,
-		//	Phone = student.Phone,
-		//	Gender = student.Gender,
-		//	Address = student.Address,
-		//	Guardians = student.Guardians,
-		//};
+    [HttpPost]
+    public IActionResult PostStudent([FromBody] Student student)
+    {
+        if (student == null)
+        {
+            return BadRequest("Student object is null");
+        }
 
+        var newStudent = new Student
+        {
+            Name = student.Name,
+            Phone = student.Phone,
+            Gender = student.Gender,
+            Addresses = student?.Addresses?.Select(a => new Address
+            {
+                City = a.City,
+                State = a.State,
+                PostalCode = a.PostalCode,
+                StudentId = a.StudentId
+            }).ToList(),
+            Guardians = student?.Guardians?.Select(g => new Guardian
+            {
+                Name = g.Name,
+                Relation = g.Relation,
+                StudentId = g.StudentId
+            }).ToList()
+        };
 
+        _context.Students.Add(newStudent);
+        _context.SaveChanges();
 
-		if (student.Address != null && student.Guardians.Count > 0)
-		{
-			foreach (var address in student.Address)
-			{
-				//book.AuthorId = author.AuthorId; // Set AuthorId for each book
-				address.StudentId = student.ID;	
-				address.State
-			}
-
-			foreach (var guardian in student.Guardians)
-			{
-				guardian.StudentId = student.ID;
-			}
-		}
-
-
-		// Use LINQ to create Address and Guardian entities and associate them with the new student
-		//newStudent.Address = student.Address
-		//	.Select(a => new Address
-		//	{
-		//		City = a.City,
-		//		State = a.State,
-		//		PostalCode = a.PostalCode,
-		//		// Set StudentId directly in the mapping using LINQ (we'll update this later after student is saved)
-		//		StudentId = newStudent.ID
-		//	}).ToList();
-
-		//newStudent.Guardians = student.Guardians
-		//	.Select(g => new Guardian
-		//	{
-		//		Name = g.Name,
-		//		Phone = g.Phone,
-		//		Email = g.Email,
-		//		// Set StudentId directly in the mapping using LINQ
-		//		StudentId = newStudent.ID
-		//	}).ToList();
-
-		// Add the student to the DbContext
-		await _context.Student.AddAsync(student);
-		await _context.SaveChangesAsync(); // Save to generate ID for the new student
-
-		// Update StudentId for Address and Guardian after saving the student
-		//newStudent.Address.ForEach(a => a.StudentId = newStudent.ID);
-		//newStudent.Guardians.ForEach(g => g.StudentId = newStudent.ID);
-
-		// Save again to update the foreign keys for Address and Guardians
-		//await _context.SaveChangesAsync();
-
-		// Return the created student along with related entities
-		//return CreatedAtAction(nameof(GetStudent), new { id = newStudent.ID }, newStudent);
-		return Ok("posted data successfully");
-	}
+        //return Ok(new {message = "Student Added Sucessfully"});
+        return Ok(newStudent);
+    }
 
 
 
 
-	// GET: api/Students/5
-	[HttpGet("{id}")]
+    // GET: api/Students/5
+    [HttpGet("{id}")]
 	public async Task<ActionResult<Student>> GetStudent(int id)
 	{
-		var student = await _context.Student
-			.Include(s => s.Address)
+		var student = await _context.Students
+			.Include(s => s.Addresses)
 			.Include(s => s.Guardians)
 			.FirstOrDefaultAsync(s => s.ID == id);
 
@@ -110,6 +72,92 @@ public class StudentsController : ControllerBase
 
 		return student;
 	}
+
+    [HttpGet]
+	public async Task<ActionResult<IEnumerable<StudentDBContext>>> GetAllStudentDetails()
+	{
+		var AllStudentDetails = await _context.Students
+			.Include(p => p.Addresses)
+            .Include(g=>g.Guardians)
+			.ToListAsync();
+
+		return Ok(AllStudentDetails);
+	}
+
+
+	[HttpPut("{id}")]
+	public async Task<IActionResult> UpdateStudent(int id, Student updatedStudent)
+	{
+		// Fetch the existing student with related data
+		var existingStudent = await _context.Students
+			.Include(s => s.Addresses)
+			.Include(s => s.Guardians)
+			.FirstOrDefaultAsync(s => s.ID == id);
+
+		if (existingStudent == null)
+		{
+			return NotFound();
+		}
+
+		// Update student properties
+		existingStudent.Name = updatedStudent.Name;
+		existingStudent.Phone = updatedStudent.Phone;
+		existingStudent.Gender = updatedStudent.Gender;
+
+		// Update addresses
+		foreach (var updatedAddress in updatedStudent.Addresses)
+		{
+			var existingAddress = existingStudent.Addresses?.FirstOrDefault(a => a.ID == updatedAddress.ID);
+
+			if (existingAddress != null)
+			{
+				// Update existing address
+				existingAddress.City = updatedAddress.City;
+				existingAddress.State = updatedAddress.State;
+				existingAddress.PostalCode = updatedAddress.PostalCode;
+			}
+			else
+			{
+				// Add new address
+				existingStudent.Addresses?.Add(new Address
+				{
+					City = updatedAddress.City,
+					State = updatedAddress.State,
+					PostalCode = updatedAddress.PostalCode,
+					StudentId = existingStudent.ID
+				});
+			}
+		}
+		// Save changes to the database
+		await _context.SaveChangesAsync();
+
+		return Ok("Here No Data Available");
+	}
+
+
+		[HttpDelete("{id}")]
+		public async Task<IActionResult> DeleteStudent(int id)
+		{
+			// Fetch the student with related data
+			var student = await _context.Students
+				.Include(s => s.Addresses)
+				.Include(s => s.Guardians)
+				.FirstOrDefaultAsync(s => s.ID == id);
+
+			if (student == null)
+			{
+				return NotFound(); // Return 404 if the student does not exist
+			}
+
+			// Remove the student (related addresses and guardians will be deleted due to cascade delete)
+			_context.Students.Remove(student);
+
+			// Save changes to the database
+			await _context.SaveChangesAsync();
+
+			return NoContent(); // Return 204 No Content
+		}
+
 }
 
 
